@@ -1,0 +1,396 @@
+student(sid, sname, sex, age, year, gpa)
+dept(dname, numphds)
+prof(pname, dname)
+course(cno, cname, dname)
+major(dname, sid)
+section(dname, cno, sectno, pname)
+enroll(sid, grade, dname, cno, sectno)
+
+
+ALTER TABLE student ADD PRIMARY KEY (sid);
+
+ALTER TABLE student MODIFY gpa decimal(3,2);
+ALTER TABLE student ALTER COLUMN gpa decimal(3,2);
+
+ALTER TABLE course DROP PRIMARY KEY
+ALTER TABLE enroll ADD PRIMARY KEY (sid, dname, cno, sectno);
+
+#####################################################################
+dname = 'Computer Sciences'
+
+cno(course,section,enroll)
+sectno(section, enroll)
+average gpa(student) -- AVG(student.gpa)
+
+SELECT enroll.cno, enroll.sectno, AVG(student.gpa)
+FROM enroll, student
+GROUP BY enroll.cno, enroll.sectno, enroll.dname
+HAVING enroll.dname='Computer Sciences';
+
+SELECT enroll.cno, enroll.sectno, AVG(student.gpa)
+FROM enroll JOIN student on enroll.sid=student.sid
+GROUP BY enroll.cno, enroll.sectno, enroll.dname
+HAVING enroll.dname='Computer Sciences';
+
+SELECT e.cno, e.sectno, AVG(s.gpa)
+FROM enroll e JOIN student s ON e.sid=s.sid
+GROUP BY e.cno, e.sectno, e.dname
+HAVING e.dname='Computer Sciences';
+
+####################################################
+SELECT c.cname, c.cno, e.sectno
+FROM enroll e JOIN course c ON (e.cno=c.cno AND e.dname=c.dname)
+GROUP BY c.cno, e.sectno
+HAVING COUNT(e.sid)<6;
+
+SELECT COUNT(e.sid), e.cno, e.sectno, e.dname
+FROM enroll e 
+GROUP BY e.cno, e.sectno, e.dname;
+
+SELECT COUNT(e.sid), e.cno, e.sectno, e.dname, c.cname
+FROM enroll e JOIN course c ON (e.cno=c.cno AND e.dname=c.dname)
+GROUP BY e.cno, e.sectno, e.dname, c.cname;
+
+SELECT COUNT(e.sid), e.cno, e.sectno, e.dname, c.cname
+FROM enroll e FULL JOIN course c ON (e.cno=c.cno AND e.dname=c.dname)
+GROUP BY e.cno, e.sectno, e.dname, c.cname
+HAVING COUNT(e.sid)<6;
+
+SELECT c.cname, e.cno, e.sectno
+FROM enroll e FULL JOIN course c ON (e.cno=c.cno AND e.dname=c.dname)
+GROUP BY e.cno, e.sectno, e.dname, c.cname
+HAVING COUNT(e.sid)<6;
+
+SELECT c.cname, c.cno, e.sectno
+FROM enroll e, course c
+WHERE COUNT(
+	SELECT e.sid
+	FROM enroll e
+	GROUP BY e.cno, e.sectno, e.dname;
+	)<6;
+
+cname(course)
+cno(course, section, enroll)
+sectno(section, enroll)
+
+###############################3###################################
+
+sname(student)
+[major]dname(major)
+age(student)
+[sid(student, major)]
+
+SELECT s.sname, m.dname, s.age
+FROM student s JOIN major m ON (s.sid=m.sid)
+WHERE s.age<18;
+
+SELECT m.dname
+FROM student s JOIN major m ON (s.sid=m.sid)
+WHERE s.age<18;
+
+================================ 4 ==================================
+
+sname(student)
+dname(major)
+
+cname(course)='College Geometry'
+
+SELECT s.sname, m.dname
+FROM student s JOIN major m ON (s.sid=m.sid)
+
+SELECT e.sid
+FROM enroll e JOIN course c ON (e.cno=c.cno)
+WHERE c.cname like 'College Geometry%';
+
+SELECT s.sname, m.dname
+FROM student s JOIN major m ON (s.sid=m.sid)
+WHERE s.sid IN (SELECT e.sid
+	FROM enroll e JOIN course c ON (e.cno=c.cno)
+	WHERE c.cname LIKE 'College Geometry%');
+
+SELECT s.sname, coalesce(m.dname, 'empty')
+FROM student s FULL JOIN major m ON (s.sid=m.sid)
+WHERE s.sid IN (SELECT e.sid
+	FROM enroll e JOIN course c ON (e.cno=c.cno)
+	WHERE c.cname LIKE 'College Geometry%');
+
+SELECT s.sname, coalesce(m.dname, 'no major') 
+FROM student s LEFT JOIN major m ON s.sid = m.sid 
+WHERE s.sid IN (SELECT sid 
+	FROM enroll 
+	WHERE enroll.cno IN (SELECT cno 
+		FROM course 
+		WHERE cname LIKE 'College Geometry%'));
+
+======================== 5 ================================
+
+dname(major)
+cname(course) [='College Geometry%']
+SUM()=0
+
+dname(dept)
+numphds(dept)
+
+SELECT d.dname, d.numphds
+FROM dept d 
+
+SELECT m.dname
+FROM student s JOIN major m ON (s.sid=m.sid)
+WHERE s.sid IN (SELECT e.sid
+	FROM enroll e JOIN course c ON (e.cno=c.cno)
+	WHERE c.cname LIKE 'College Geometry%');
+
+SELECT *
+FROM student s JOIN major m ON (s.sid=m.sid)
+WHERE s.sid IN (SELECT e.sid
+	FROM enroll e JOIN course c ON (e.cno=c.cno)
+	WHERE c.cname LIKE 'College Geometry%');
+
+SELECT m.dname
+FROM student s JOIN major m ON (s.sid=m.sid)
+WHERE s.sid IN (SELECT e.sid
+	FROM enroll e JOIN course c ON (e.cno=c.cno)
+	WHERE c.cname LIKE 'College Geometry%');
+
+SELECT *, coalesce(m.dname, 'no major') 
+FROM student s LEFT JOIN major m ON s.sid = m.sid 
+WHERE s.sid IN (SELECT sid 
+	FROM enroll 
+	WHERE enroll.cno IN (SELECT cno 
+		FROM course 
+		WHERE cname LIKE 'College Geometry%'));
+
+SELECT m.dname
+FROM student s JOIN major m ON (s.sid=m.sid)
+WHERE s.sid IN (SELECT e.sid
+	FROM enroll e JOIN course c ON (e.cno=c.cno)
+	WHERE c.cname LIKE 'College Geometry%');
+
+SELECT d.dname, d.numphds
+FROM dept d 
+
+SELECT d.dname, d.numphds 
+FROM (SELECT DISTINCT m.dname AS name
+	FROM student s JOIN major m ON (s.sid=m.sid)
+	WHERE s.sid IN (SELECT e.sid
+		FROM enroll e JOIN course c ON (e.cno=c.cno)
+		WHERE c.cname LIKE 'College Geometry%')) as temp, dept d
+WHERE d.dname = temp.name;
+
+SELECT d.dname, d.numphds
+FROM dept d
+EXCEPT
+(SELECT d.dname, d.numphds 
+	FROM (SELECT DISTINCT m.dname
+		FROM student s JOIN major m ON (s.sid=m.sid)
+		WHERE s.sid IN (SELECT e.sid
+			FROM enroll e JOIN course c ON (e.cno=c.cno)
+			WHERE c.cname LIKE 'College Geometry%')) as temp, dept d
+	WHERE d.dname = temp.dname);
+
+SELECT d.dname, d.numphds
+FROM dept d
+EXCEPT
+(SELECT d.dname, d.numphds 
+FROM (SELECT DISTINCT m.dname
+FROM student s JOIN major m ON (s.sid=m.sid)
+WHERE s.sid IN (SELECT e.sid
+FROM enroll e JOIN course c ON (e.cno=c.cno)
+WHERE c.cname LIKE 'College Geometry%')) as temp, dept d
+WHERE d.dname = temp.dname);
+
+========================= 6 =====================================
+
+sname(student)
+
+dname='Computer Sciences' AND dname='Mathematics'
+
+SELECT s.sname
+FROM student s JOIN enroll e ON (s.sid=e.sid)
+WHERE 
+
+
+SELECT s.sname
+FROM enroll e JOIN student s ON (s.sid=e.sid)
+WHERE e.dname='Computer Sciences'
+INTERSECT
+SELECT s.sname
+FROM enroll e JOIN student s ON (s.sid=e.sid)
+WHERE e.dname='Mathematics';
+
+===================== 7 =======================
+
+SELECT MAX(s.age) - MIN(s.age) AS age_difference
+FROM student s JOIN major m ON (s.sid=m.sid)
+WHERE m.dname='Computer Sciences';
+
+===================== 8 =======================
+
+dname(major)[s.gpa<1]
+AVG(s.gpa(student))
+
+SELECT s.sid
+FROM student s
+WHERE s.gpa<1.0;
+
+SELECT m.dname
+FROM student s JOIN major m ON (s.sid=m.sid)
+WHERE s.gpa<1.0;
+
+SELECT m.dname, AVG(s.gpa)
+FROM student s JOIN major m ON (s.sid=m.sid)
+GROUP BY m.dname;
+
+SELECT m.dname, AVG(s.gpa)
+FROM (SELECT m.dname
+	FROM student s JOIN major m ON (s.sid=m.sid)
+	WHERE s.gpa<1.0) as mdn
+JOIN (SELECT m.dname, AVG(s.gpa)
+	FROM student s JOIN major m ON (s.sid=m.sid)
+	GROUP BY m.dname) as ag
+ON (mdn.dname=ag.dname);
+
+SELECT mdn.dname, ag.avg
+FROM (SELECT m.dname
+	FROM student s JOIN major m ON (s.sid=m.sid)
+	WHERE s.gpa<1.0) as mdn
+JOIN (SELECT m.dname, AVG(s.gpa) as avg
+	FROM student s JOIN major m ON (s.sid=m.sid)
+	GROUP BY m.dname) as ag
+ON (mdn.dname=ag.dname)
+GROUP BY mdn.dname, ag.avg;
+
+=================== 9 ====================================
+
+sid,sname,gpa(student)
+
+dname(enroll)[='Civil Engineering']
+
+SELECT COUNT(s.cno) as count_courses
+FROM section s
+WHERE s.dname='Civil Engineering';
+
+
+
+SELECT e.sid, e.cno, e.sectno
+FROM enroll e
+WHERE e.dname='Civil Engineering';
+
+SELECT s.sid, s.sname, s.gpa
+FROM student s
+WHERE sid=(SELECT e.sid
+	FROM enroll e
+	WHERE dname='Civil Engineering'
+	GROUP BY e.sid
+	HAVING COUNT(distinct(e.cno, e.sectno)) = (SELECT COUNT(s.cno) as count_courses
+		FROM section s
+		WHERE s.dname='Civil Engineering'));
+
+SELECT s.sid, s.sname, s.gpa
+FROM student s
+WHERE sid=(SELECT e.sid
+	FROM enroll e
+	WHERE dname='Civil Engineering'
+	GROUP BY e.sid
+	HAVING COUNT(e.cno) = (SELECT COUNT(s.cno) as count_courses
+		FROM section s
+		WHERE s.dname='Civil Engineering'));
+
+
+SELECT s.sid, s.sname, s.gpa
+FROM student s
+WHERE sid=(SELECT e.sid
+FROM enroll e
+WHERE dname='Civil Engineering'
+GROUP BY e.sid
+HAVING COUNT(e.cno) = (SELECT COUNT(s.cno) as count_courses
+	FROM section s
+	WHERE s.dname='Civil Engineering'));
+
+############################# B ###################################
+
+product(maker, model, type)
+pc(model, speed, ram, hd, price)
+laptop(model, speed, ram, hd, screen, price)
+printer(model, color, type, price)
+
+INSERT INTO product VALUES ('D.', 'pc-001', 'pc');
+INSERT INTO product VALUES ('hp', 'pc-002', 'pc');
+INSERT INTO product VALUES ('hp', 'pc-003', 'pc');
+INSERT INTO product VALUES ('D.', 'lt-000', 'laptop');
+INSERT INTO product VALUES ('hp', 'lt-001', 'laptop');
+INSERT INTO product VALUES ('hp', 'lt-002', 'laptop');
+INSERT INTO product VALUES ('D.', 'pt-000', 'printer');
+INSERT INTO product VALUES ('D.', 'pt-001', 'printer');
+INSERT INTO pc VALUES ('pc-000', 2.40, 1024, 128, 500);
+INSERT INTO pc VALUES ('pc-001', 2.80, 2048, 256, 800);
+INSERT INTO pc VALUES ('pc-002', 3.50, 1024, 512, 900);
+INSERT INTO pc VALUES ('pc-003', 7.50, 4024, 812, 1900);
+INSERT INTO laptop VALUES ('lt-000', 6.40, 6024, 128, 13.0, 600);
+INSERT INTO laptop VALUES ('lt-001', 5.80, 3048, 256, 15.0, 700);
+INSERT INTO laptop VALUES ('lt-002', 3.50, 5024, 512, 17.0, 300);
+INSERT INTO printer VALUES ('pt-000', true, 'laser');
+INSERT INTO printer VALUES ('pt-001', false, 'ink-jet');
+
+CREATE TABLE product
+(
+maker varchar(80),
+model varchar(80) PRIMARY KEY NOT NULL,
+type varchar(80)
+);
+
+CREATE TABLE pc
+(
+model varchar(80) PRIMARY KEY NOT NULL,
+speed decimal,
+ram int,
+hd int,
+price int
+);
+
+CREATE TABLE laptop
+(
+model varchar(80) PRIMARY KEY NOT NULL,
+speed decimal,
+ram int,
+hd int,
+screen decimal,
+price int
+);
+
+CREATE TABLE printer
+(
+model varchar(80) PRIMARY KEY NOT NULL,
+color BOOLEAN,
+type varchar(80),
+price int
+);
+
+=================================================
+
+AVG()
+
+(SELECT AVG(pc.price) AS pc_avg
+FROM pc JOIN product pr ON (pc.model=pr.model)
+WHERE pr.maker='D.')
+UNION
+(SELECT AVG(l.price) AS laptop_avg
+FROM laptop l JOIN product pr ON (l.model=pr.model)
+WHERE pr.maker='D.');
+
+==================================================
+
+SELECT pr.maker
+FROM product pr
+WHERE pr.type='printer'
+
+SELECT AVG(pc.hd)
+FROM product pr JOIN pc ON (pc.model=pr.model)
+WHERE pr.maker IN (SELECT pr.maker
+	FROM product pr
+	WHERE pr.type='printer');
+
+
+
+
+
